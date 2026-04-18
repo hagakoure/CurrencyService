@@ -5,11 +5,21 @@
 ## Требования
 - .NET 8 SDK
 
+## Архитектура
+- Clean Architecture + CQRS (MediatR) 
+- YARP Gateway 
+- JWT Auth 
+- EF Core + PostgreSQL 
+- Background Worker (CBR Parser)
+
+## Тестирование
+- Файл test-api.http содержит готовые запросы для Rider HTTP Client.
+
 ## Быстрый старт
 
 ```bash
 # 1. Клонировать репозиторий
-git clone <repo-url>
+gh repo clone hagakoure/CurrencyService
 cd CurrencyService
 
 # 2. Запустить через Docker
