@@ -1,0 +1,73 @@
+# .github/workflows/ci.yml
+# CI-пайплайн для CurrencyService: тесты + сборка
+
+name:  CI Pipeline
+
+#  Когда запускать этот воркфлоу:
+on:
+  push:
+    branches: [ "main", "master" ]      # При пуше в основную ветку
+  pull_request:
+    branches: [ "main", "master" ]      # При создании/обновлении PR
+
+#  Задания (jobs), которые выполняются параллельно или последовательно
+jobs:
+  
+  # Job 1: Запуск тестов
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest  # Виртуальная машина с Ubuntu
+    
+    steps:
+      # 1. Клонируем репозиторий
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      # 2. Устанавливаем .NET 8 SDK
+      - name:  Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      
+      # 3. Восстанавливаем пакеты (аналог dotnet restore)
+      - name:  Restore dependencies
+        run: dotnet restore CurrencyService.sln
+      
+      # 4. Собираем проект (проверка на ошибки компиляции)
+      - name:  Build solution
+        run: dotnet build CurrencyService.sln --configuration Release --no-restore
+      
+      # 5. Запускаем тесты с выводом результатов
+      - name:  Run tests
+        run: dotnet test CurrencyService.sln --configuration Release --no-build --verbosity normal
+
+  # Job 2: Сборка Docker-образов (запускается только если тесты прошли)
+  docker-build:
+    name: 🐳 Build Docker Images
+    runs-on: ubuntu-latest
+    needs: test 
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      
+      # Кэшируем слои Docker для ускорения последующих сборок
+      - name:  Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      # Собираем каждый сервис отдельно (без push в registry)
+      - name: Build ApiGateway
+        run: docker build -t currency-api-gateway:ci -f src/ApiGateway/Dockerfile .
+
+      - name: Build UserService
+        run: docker build -t currency-user-service:ci -f src/UserService.UserService.Api/Dockerfile .
+
+      - name: Build FinanceService
+        run: docker build -t currency-finance-service:ci -f src/FinanceService.FinanceService.Api/Dockerfile .
+
+      - name: Build CurrencyScraper
+        run: docker build -t currency-scraper:ci -f src/CurrencyScraper/Dockerfile .
+      
+      # Финальный шаг
+      - name: ✅ CI Pipeline Complete
+        run: echo "🎉 All checks passed! Ready for deployment."
