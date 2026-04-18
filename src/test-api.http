@@ -1,0 +1,83 @@
+﻿@BaseUrl = http://localhost:5000
+@ContentType = application/json
+
+### Регистрация нового пользователя
+# @name register
+POST {{BaseUrl}}/api/auth/register
+Content-Type: {{ContentType}}
+
+{
+  "name": "rideruser",
+  "password": "Password123!"
+}
+
+> {%
+    // Сохраняем userId для отладки
+    if (response.status === 200) {
+        client.global.set("userId", response.body.userId);
+        console.log("Registered: " + response.body.userId);
+    } else {
+        console.log("Register failed: " + response.status);
+    }
+%}
+
+
+### Логин и получение токена
+# @name login
+POST {{BaseUrl}}/api/auth/login
+Content-Type: {{ContentType}}
+
+{
+  "name": "user",
+  "password": "Password123!"
+}
+
+> {%
+    //сохраняем токен в глобальную переменную
+    if (response.status === 200 && response.body.token) {
+        client.global.set("authToken", response.body.token);
+        console.log("Token received: " + response.body.token.substring(0, 30) + "...");
+    } else {
+        console.log("Login failed: " + response.status);
+    }
+%}
+
+### Получить курсы валют (требует авторизации)
+# @name getRates
+GET {{BaseUrl}}/api/finance/rates
+Authorization: Bearer {{authToken}}
+Accept: {{ContentType}}
+
+> {%
+    if (response.status === 200) {
+        console.log("Rates received: " + response.body.length + " currencies");
+    } else {
+        console.log("Rates failed: " + response.status);
+    }
+%}
+
+### Запрос без токена (401 Unauthorized)
+GET {{BaseUrl}}/api/finance/rates
+Accept: {{ContentType}}
+
+### Регистрация с невалидными данными (400)
+POST {{BaseUrl}}/api/auth/register
+Content-Type: {{ContentType}}
+
+{
+  "name": "baduser",
+  "password": ""
+}
+
+### Быстрая смена пользователя для тестов
+@testUser = demo_{{$timestamp}}
+@testPass = TestPass123!
+
+### Зарегистрировать тестового пользователя с уникальным именем
+POST {{BaseUrl}}/api/auth/register
+Content-Type: {{ContentType}}
+
+{
+  "name": "{{testUser}}",
+  "password": "{{testPass}}"
+}

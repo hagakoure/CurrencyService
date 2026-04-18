@@ -1,0 +1,42 @@
+# .NET / MSBuild
+[Bb]in/
+[Oo]bj/
+*.dll
+*.exe
+*.pdb
+*.user
+*.suo
+*.log
+*.vsidx
+*.pidb
+*.sln.docstates
+
+# IDE
+.vs/
+.idea/
+*.userprefs
+*.csproj.user
+.vscode/
+
+# NuGet
+packages/
+*.nupkg
+*.snupkg
+
+# Docker
+docker-compose.override.yml
+.env
+.docker/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test & Coverage
+TestResults/
+coverage/
+*.opencover.xml
+*.coveragexml
+
+# Rider
+rider/

@@ -1,0 +1,79 @@
+﻿
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: currency-postgres
+    environment:
+      POSTGRES_DB: currency_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  user-service:
+    build:
+      context: .
+      dockerfile: src/UserService.UserService.Api/Dockerfile
+    container_name: currency-user-service
+    environment:
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=currency_db;Username=postgres;Password=postgres
+      - Jwt__Issuer=currency-service
+      - Jwt__Audience=currency-client
+      - Jwt__SecretKey=super-secret-key-for-jwt-must-be-32-chars-long!!
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8081:8080"
+
+  finance-service:
+    build:
+      context: .
+      dockerfile: src/FinanceService.FinanceService.Api/Dockerfile
+    container_name: currency-finance-service
+    environment:
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=currency_db;Username=postgres;Password=postgres
+      - Jwt__Issuer=currency-service
+      - Jwt__Audience=currency-client
+      - Jwt__SecretKey=super-secret-key-for-jwt-must-be-32-chars-long!!
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8082:8080"
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: src/ApiGateway/Dockerfile
+    container_name: currency-api-gateway
+    environment:
+      - ASPNETCORE_HTTP_PORTS=8080
+    depends_on:
+      - user-service
+      - finance-service
+    ports:
+      - "5000:8080"
+
+  currency-scraper:
+    build:
+      context: .
+      dockerfile: src/CurrencyScraper/Dockerfile
+    container_name: currency-scraper
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=currency_db;Username=postgres;Password=postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
